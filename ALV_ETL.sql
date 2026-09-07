@@ -1,13 +1,8 @@
--- =====================================================================
--- 0. CRIAÇÃO DO BANCO DE DADOS DO DATA WAREHOUSE (DW)
--- =====================================================================
 DROP DATABASE IF EXISTS ALV_DW;
 CREATE DATABASE ALV_DW DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE ALV_DW;
 
--- =====================================================================
--- 1. CRIAÇÃO DAS TABELAS DIMENSÃO (Star Schema)
--- =====================================================================
+-- TABELAS DIMENSÃO 
 
 CREATE TABLE Dim_Tempo (
     SK_Tempo INT AUTO_INCREMENT,
@@ -54,9 +49,7 @@ CREATE TABLE Dim_Genero (
     CONSTRAINT pk_dim_genero PRIMARY KEY (SK_Genero)
 );
 
--- =====================================================================
--- 2. CRIAÇÃO DAS TABELAS FATO
--- =====================================================================
+--  TABELAS FATO
 
 CREATE TABLE Fato_Receita (
     SK_Cliente INT,
@@ -83,13 +76,9 @@ CREATE TABLE Fato_Avaliacao (
     CONSTRAINT fk_fato_aval_tempo FOREIGN KEY (SK_Tempo) REFERENCES Dim_Tempo (SK_Tempo)
 );
 
--- =====================================================================
--- 3. PROCESSO DE ETL (EXTRACT, TRANSFORM E LOAD)
--- =====================================================================
 
--- ---------------------------------------------------------------------
--- 3.1 Carga Dim_Tempo (Gerando datas de 2020 a 2025 usando CTE Recursiva)
--- ---------------------------------------------------------------------
+-- PROCESSO DE ETL (EXTRACT, TRANSFORM E LOAD)
+
 INSERT INTO Dim_Tempo (Data_Completa, Dia_Semana, Dia, Mes, Trimestre, Ano)
 WITH RECURSIVE Datas AS (
     SELECT CAST('2020-01-01' AS DATE) AS DataBase
@@ -107,9 +96,6 @@ SELECT
     YEAR(DataBase)
 FROM Datas;
 
--- ---------------------------------------------------------------------
--- 3.2 Carga Dim_Cliente
--- ---------------------------------------------------------------------
 INSERT INTO Dim_Cliente (ID_Cliente_Origem, Nome, Logradouro, Bairro, Municipio, Estado)
 SELECT 
     UsuarioID, 
@@ -120,11 +106,7 @@ SELECT
     COALESCE(Estado, 'NA') -- Transformação: Tratamento de nulos no Estado
 FROM ALV.Usuario;
 
--- ---------------------------------------------------------------------
--- 3.3 Carga Dim_Filme
--- Nota: Como um filme pode ter vários diretores, estamos selecionando o 
--- primeiro diretor encontrado para simplificar a dimensão, conforme o guia.
--- ---------------------------------------------------------------------
+-- como um filme pode ter vários diretores, estamos selecionando o primeiro diretor encontrado para simplificar a dimensão
 INSERT INTO Dim_Filme (ID_Filme_Origem, Titulo, Duracao_Minutos, Diretor_Principal)
 SELECT 
     f.FilmeID, 
@@ -137,24 +119,14 @@ SELECT
      LIMIT 1) AS Diretor_Principal
 FROM ALV.Filme f;
 
--- ---------------------------------------------------------------------
--- 3.4 Carga Dim_Produtora
--- ---------------------------------------------------------------------
 INSERT INTO Dim_Produtora (ID_Produtora_Origem, Nome_Produtora)
 SELECT ProdutoraID, ProdutoraNome
 FROM ALV.Produtora;
 
--- ---------------------------------------------------------------------
--- 3.5 Carga Dim_Genero
--- ---------------------------------------------------------------------
 INSERT INTO Dim_Genero (ID_Genero_Origem, Nome_Genero)
 SELECT GeneroID, GeneroNome
 FROM ALV.Genero;
 
--- ---------------------------------------------------------------------
--- 3.6 Carga Fato_Receita
--- Cruzando as chaves de origem para encontrar as SKs no DW
--- ---------------------------------------------------------------------
 INSERT INTO Fato_Receita (SK_Cliente, SK_Tempo, ID_Assinatura, Hora, Valor_Pago)
 SELECT 
     c.SK_Cliente,
@@ -166,11 +138,6 @@ FROM ALV.UsrPagto p
 JOIN Dim_Cliente c ON p.UsuarioID = c.ID_Cliente_Origem
 JOIN Dim_Tempo t ON p.DataPagto = t.Data_Completa;
 
--- ---------------------------------------------------------------------
--- 3.7 Carga Fato_Avaliacao
--- Explosão de linhas para filmes com múltiplos gêneros e produtoras 
--- (Conforme a regra do seu guia: ligá-los diretamente na fato facilita filtros)
--- ---------------------------------------------------------------------
 INSERT INTO Fato_Avaliacao (SK_Cliente, SK_Filme, SK_Produtora, SK_Genero, SK_Tempo, Hora_Avaliacao, Nota)
 SELECT 
     c.SK_Cliente,
@@ -184,7 +151,6 @@ FROM ALV.Avaliacao a
 JOIN Dim_Cliente c ON a.UsuarioID = c.ID_Cliente_Origem
 JOIN Dim_Filme f ON a.FilmeID = f.ID_Filme_Origem
 JOIN Dim_Tempo t ON a.AvaliacaoData = t.Data_Completa
--- Relacionamento com as tabelas associativas do MIR para pegar Gênero e Produtora
 LEFT JOIN ALV.Filme_GeneroFilme f_gen ON a.FilmeID = f_gen.FilmeID
 LEFT JOIN Dim_Genero g ON f_gen.GeneroID = g.ID_Genero_Origem
 LEFT JOIN ALV.FilmPagtoRoy f_prod ON a.FilmeID = f_prod.FilmeID

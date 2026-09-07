@@ -1,34 +1,6 @@
--- =====================================================================
---  ALV - Serviço de Streaming
---  Script de criação das tabelas + carga de dados fictícios
---  Baseado no esquema relacional do arquivo ALV_Relacional.erdplus,
---  atualizado para a versão normalizada (3FN): Genero, Diretor e Ator
---  deixaram de ser atributos multivalorados em texto e viraram
---  entidades próprias, ligadas a Filme por tabelas associativas que
---  guardam apenas as chaves (FilmeID + GeneroID/DiretorID/AtorID).
---
---  Dialeto: MySQL / MariaDB (sintaxe próxima do ANSI SQL; para
---  PostgreSQL basta remover o bloco de FOREIGN_KEY_CHECKS e trocar
---  os comentários "ENGINE" caso existam).
---
---  ATENÇÃO: todos os dados abaixo são INVENTADOS, inclusive nomes,
---  e-mails, telefones, endereços e números de cartão. Nenhum deles
---  corresponde a pessoas ou empresas reais.
--- =====================================================================
-
--- ---------------------------------------------------------------------
--- 0. Banco de dados
--- ---------------------------------------------------------------------
 DROP DATABASE IF EXISTS ALV;
 CREATE DATABASE ALV DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE ALV;
-
--- ---------------------------------------------------------------------
--- 1. CRIAÇÃO DAS TABELAS
---    (ordem respeita as dependências de chave estrangeira)
--- ---------------------------------------------------------------------
-
--- Tabelas independentes -----------------------------------------------
 
 CREATE TABLE Plano (
     PlanoID      INT            NOT NULL,
@@ -80,12 +52,10 @@ CREATE TABLE Usuario (
     Email                VARCHAR(120)  NOT NULL,
     Telefone             VARCHAR(20)   NOT NULL,
     Senha                VARCHAR(100)  NOT NULL,
-    -- Endereço
     Logradouro           VARCHAR(120)  NOT NULL,
     Bairro               VARCHAR(60)   NOT NULL,
     Municipio            VARCHAR(60)   NOT NULL,
     Estado               CHAR(2)       NOT NULL,
-    -- Dados de pagamento (fictícios)
     NomeDoProprietario   VARCHAR(80)   NOT NULL,
     NumeroDoCartao       VARCHAR(19)   NOT NULL,
     DataVencimento       DATE          NOT NULL,
@@ -103,8 +73,6 @@ CREATE TABLE Filme (
     CONSTRAINT ck_filme_duracao CHECK (DuracaoMin > 0),
     CONSTRAINT ck_filme_ano CHECK (AnoDeLancamento BETWEEN 1888 AND 2100)
 );
-
--- Tabelas com chave estrangeira ---------------------------------------
 
 CREATE TABLE Assinatura (
     AssinaturaID  INT          NOT NULL,
@@ -133,8 +101,8 @@ CREATE TABLE Funcionario (
 
 CREATE TABLE Avaliacao (
     AvaliacaoID    INT   NOT NULL,
-    Nota           INT   NOT NULL,          -- atributo "Nota0-5" do esquema
-    Comentario     VARCHAR(500)  NULL,      -- atributo opcional
+    Nota           INT   NOT NULL,          
+    Comentario     VARCHAR(500)  NULL,     
     AvaliacaoData  DATE  NOT NULL,
     UsuarioID      INT   NOT NULL,
     FilmeID        INT   NOT NULL,
@@ -145,8 +113,6 @@ CREATE TABLE Avaliacao (
         REFERENCES Filme (FilmeID),
     CONSTRAINT ck_avaliacao_nota CHECK (Nota BETWEEN 0 AND 5)
 );
-
--- Tabelas associativas (relacionamentos N:N) ---------------------------
 
 CREATE TABLE UsrPagto (
     UsuarioID     INT            NOT NULL,
@@ -205,9 +171,6 @@ CREATE TABLE FilmPagtoRoy (
     CONSTRAINT ck_royalty_valor CHECK (ValorPagto >= 0)
 );
 
--- Relacionamentos N:N de Filme com Genero / Diretor / Ator -------------
--- (antes eram atributos multivalorados; normalizados para a 3FN)
-
 CREATE TABLE Filme_GeneroFilme (
     FilmeID   INT  NOT NULL,
     GeneroID  INT  NOT NULL,
@@ -239,13 +202,6 @@ CREATE TABLE Filme_AtorFilme (
 );
 
 
--- =====================================================================
--- 2. CARGA DE DADOS FICTÍCIOS
--- =====================================================================
-
--- ---------------------------------------------------------------------
--- Plano
--- ---------------------------------------------------------------------
 INSERT INTO Plano (PlanoID, PlanoNome, PrecoMensal) VALUES
 (1, 'Mobile',        12.90),
 (2, 'Basico',        18.90),
@@ -253,9 +209,7 @@ INSERT INTO Plano (PlanoID, PlanoNome, PrecoMensal) VALUES
 (4, 'Premium',       44.90),
 (5, 'Premium Anual', 39.90);
 
--- ---------------------------------------------------------------------
--- Cargo
--- ---------------------------------------------------------------------
+
 INSERT INTO Cargo (CargoID, CargoNome) VALUES
 (1, 'Analista de Conteudo'),
 (2, 'Moderador de Comunidade'),
@@ -264,9 +218,7 @@ INSERT INTO Cargo (CargoID, CargoNome) VALUES
 (5, 'Gerente de Operacoes'),
 (6, 'Suporte ao Cliente');
 
--- ---------------------------------------------------------------------
--- Produtora
--- ---------------------------------------------------------------------
+
 INSERT INTO Produtora (ProdutoraID, ProdutoraNome) VALUES
 (1, 'Aurora Filmes'),
 (2, 'Estudio Meridiano'),
@@ -275,9 +227,7 @@ INSERT INTO Produtora (ProdutoraID, ProdutoraNome) VALUES
 (5, 'Nebula Studios'),
 (6, 'Pampa Entretenimento');
 
--- ---------------------------------------------------------------------
--- Genero
--- ---------------------------------------------------------------------
+
 INSERT INTO Genero (GeneroID, GeneroNome) VALUES
 ( 1, 'Acao'),
 ( 2, 'Aventura'),
@@ -291,9 +241,7 @@ INSERT INTO Genero (GeneroID, GeneroNome) VALUES
 (10, 'Suspense'),
 (11, 'Terror');
 
--- ---------------------------------------------------------------------
--- Diretor
--- ---------------------------------------------------------------------
+
 INSERT INTO Diretor (DiretorID, DiretorNome) VALUES
 (1, 'Renato Villaca'),
 (2, 'Sofia Marchetti'),
@@ -302,9 +250,7 @@ INSERT INTO Diretor (DiretorID, DiretorNome) VALUES
 (5, 'Ivan Kowalski'),
 (6, 'Tereza Bomfim');
 
--- ---------------------------------------------------------------------
--- Ator
--- ---------------------------------------------------------------------
+
 INSERT INTO Ator (AtorID, AtorNome) VALUES
 (1, 'Marina Teixeira'),
 (2, 'Gustavo Rangel'),
@@ -315,9 +261,7 @@ INSERT INTO Ator (AtorID, AtorNome) VALUES
 (7, 'Rodrigo Assumpcao'),
 (8, 'Bianca Sarmento');
 
--- ---------------------------------------------------------------------
--- Usuario  (dados de cartão totalmente fictícios)
--- ---------------------------------------------------------------------
+
 INSERT INTO Usuario (UsuarioID, UsuarioNome, Email, Telefone, Senha,
                      Logradouro, Bairro, Municipio, Estado,
                      NomeDoProprietario, NumeroDoCartao, DataVencimento, CodigoDeSeguranca) VALUES
@@ -352,9 +296,7 @@ INSERT INTO Usuario (UsuarioID, UsuarioNome, Email, Telefone, Senha,
 (15, 'Olivia Ferraz',        'olivia.ferraz@exemplo.com',  '(98) 98567-8915', 'senha_hash_015',
       'Av. Litoranea, 505',         'Calhau',         'Sao Luis',       'MA', 'OLIVIA FERRAZ',     '4000000000001515', '2029-03-31', '115');
 
--- ---------------------------------------------------------------------
--- Filme
--- ---------------------------------------------------------------------
+
 INSERT INTO Filme (FilmeID, FilmeNome, DuracaoMin, AnoDeLancamento) VALUES
 ( 1, 'O Ultimo Farol',            118, 2018),
 ( 2, 'Cidade de Vidro',           132, 2020),
@@ -377,9 +319,7 @@ INSERT INTO Filme (FilmeID, FilmeNome, DuracaoMin, AnoDeLancamento) VALUES
 (19, 'Cartas Para Ninguem',       124, 2023),
 (20, 'O Peso do Ceu',             149, 2025);
 
--- ---------------------------------------------------------------------
--- Assinatura
--- ---------------------------------------------------------------------
+
 INSERT INTO Assinatura (AssinaturaID, DataInicio, DataFim, Status, PlanoID) VALUES
 ( 1, '2024-01-15', '2025-01-15', 'Expirada',  3),
 ( 2, '2024-02-01', '2025-02-01', 'Expirada',  2),
@@ -402,9 +342,7 @@ INSERT INTO Assinatura (AssinaturaID, DataInicio, DataFim, Status, PlanoID) VALU
 (19, '2025-08-20', '2026-08-20', 'Ativa',     5),
 (20, '2025-04-05', '2026-04-05', 'Suspensa',  4);
 
--- ---------------------------------------------------------------------
--- Funcionario
--- ---------------------------------------------------------------------
+
 INSERT INTO Funcionario (FuncionarioID, FuncionarioNome, Salario, CargoID) VALUES
 ( 1, 'Beatriz Salgueiro',    4200.00, 2),
 ( 2, 'Rafael Antunes',       4350.00, 2),
@@ -417,9 +355,7 @@ INSERT INTO Funcionario (FuncionarioID, FuncionarioNome, Salario, CargoID) VALUE
 ( 9, 'Taina Reboucas',       3250.00, 6),
 (10, 'Vinicius Aragao',      5600.00, 1);
 
--- ---------------------------------------------------------------------
--- Avaliacao
--- ---------------------------------------------------------------------
+
 INSERT INTO Avaliacao (AvaliacaoID, Nota, Comentario, AvaliacaoData, UsuarioID, FilmeID) VALUES
 ( 1, 5, 'Fotografia impecavel do inicio ao fim.',        '2025-02-11',  1,  1),
 ( 2, 4, 'Boa historia, final um pouco apressado.',       '2025-02-18',  1,  3),
@@ -447,9 +383,7 @@ INSERT INTO Avaliacao (AvaliacaoID, Nota, Comentario, AvaliacaoData, UsuarioID, 
 (24, 4, 'Bom para assistir em familia.',                 '2025-08-10', 14, 15),
 (25, 5, 'Encerramento perfeito para a historia.',        '2025-08-11', 15, 20);
 
--- ---------------------------------------------------------------------
--- UsrPagto  (pagamento de cada usuário por assinatura)
--- ---------------------------------------------------------------------
+
 INSERT INTO UsrPagto (UsuarioID, AssinaturaID, ValorPago, DataPagto) VALUES
 ( 1,  1, 29.90, '2024-01-15'),
 ( 2,  2, 18.90, '2024-02-01'),
@@ -472,9 +406,7 @@ INSERT INTO UsrPagto (UsuarioID, AssinaturaID, ValorPago, DataPagto) VALUES
 ( 7, 19, 39.90, '2025-08-20'),
 ( 9, 20, 44.90, '2025-04-05');
 
--- ---------------------------------------------------------------------
--- Assiste  (histórico de exibições)
--- ---------------------------------------------------------------------
+
 INSERT INTO Assiste (UsuarioID, FilmeID, Data) VALUES
 ( 1,  1, '2025-02-10'), ( 1,  3, '2025-02-17'), ( 1,  5, '2025-03-01'), ( 1,  7, '2025-03-20'),
 ( 2,  2, '2025-01-26'), ( 2,  4, '2025-03-13'), ( 2,  6, '2025-04-02'),
@@ -492,9 +424,7 @@ INSERT INTO Assiste (UsuarioID, FilmeID, Data) VALUES
 (14,  6, '2025-08-09'), (14, 14, '2025-07-30'), (14, 15, '2025-08-09'),
 (15,  7, '2025-08-10'), (15, 15, '2025-08-11'), (15, 20, '2025-08-10');
 
--- ---------------------------------------------------------------------
--- Modera  (funcionários que moderaram avaliações)
--- ---------------------------------------------------------------------
+
 INSERT INTO Modera (FuncionarioID, AvaliacaoID) VALUES
 (1,  1), (1,  4), (1,  7), (1, 13),
 (2,  2), (2,  5), (2, 11), (2, 16),
@@ -502,9 +432,7 @@ INSERT INTO Modera (FuncionarioID, AvaliacaoID) VALUES
 (9,  6), (9, 14), (9, 23),
 (7, 19);
 
--- ---------------------------------------------------------------------
--- GerenciaConteudo  (funcionários responsáveis por cada filme)
--- ---------------------------------------------------------------------
+
 INSERT INTO GerenciaConteudo (FilmeID, FuncionarioID) VALUES
 ( 1,  3), ( 2,  3), ( 3,  3), ( 4,  4), ( 5,  4),
 ( 6,  4), ( 7,  5), ( 8,  5), ( 9,  5), (10, 10),
@@ -512,9 +440,7 @@ INSERT INTO GerenciaConteudo (FilmeID, FuncionarioID) VALUES
 (16,  3), (17,  4), (18,  5), (19, 10), (20,  6),
 ( 1, 10), (13,  3);
 
--- ---------------------------------------------------------------------
--- FilmPagtoRoy  (royalties pagos às produtoras)
--- ---------------------------------------------------------------------
+
 INSERT INTO FilmPagtoRoy (ProdutoraID, FilmeID, ValorPagto, DataPagto) VALUES
 (1,  1, 125000.00, '2025-01-10'),
 (1,  3,  98000.00, '2025-01-10'),
@@ -537,34 +463,30 @@ INSERT INTO FilmPagtoRoy (ProdutoraID, FilmeID, ValorPagto, DataPagto) VALUES
 (6, 10,  81200.00, '2025-03-05'),
 (6, 16,  93700.00, '2025-04-05');
 
--- ---------------------------------------------------------------------
--- Filme_GeneroFilme
--- ---------------------------------------------------------------------
-INSERT INTO Filme_GeneroFilme (FilmeID, GeneroID) VALUES
-( 1,  4), ( 1, 10),   -- Drama, Suspense
-( 2,  6), ( 2,  8),   -- Ficcao, Policial
-( 3,  9), ( 3,  4),   -- Romance, Drama
-( 4,  2), ( 4,  1),   -- Aventura, Acao
-( 5, 11), ( 5, 10),   -- Terror, Suspense
-( 6,  6), ( 6,  2),   -- Ficcao, Aventura
-( 7,  3),             -- Comedia
-( 8,  4), ( 8,  9),   -- Drama, Romance
-( 9,  3), ( 9,  9),   -- Comedia, Romance
-(10,  3), (10,  5),   -- Comedia, Familia
-(11,  4), (11,  7),   -- Drama, Historico
-(12,  8), (12,  1),   -- Policial, Acao
-(13,  6), (13, 10),   -- Ficcao, Suspense
-(14,  4),             -- Drama
-(15,  6), (15,  3),   -- Ficcao, Comedia
-(16,  9), (16,  4),   -- Romance, Drama
-(17,  1), (17,  2),   -- Acao, Aventura
-(18, 11),             -- Terror
-(19,  4), (19,  9),   -- Drama, Romance
-(20,  4), (20,  7);   -- Drama, Historico
 
--- ---------------------------------------------------------------------
--- Filme_DiretorFilme
--- ---------------------------------------------------------------------
+INSERT INTO Filme_GeneroFilme (FilmeID, GeneroID) VALUES
+( 1,  4), ( 1, 10),   
+( 2,  6), ( 2,  8),   
+( 3,  9), ( 3,  4),   
+( 4,  2), ( 4,  1),   
+( 5, 11), ( 5, 10),   
+( 6,  6), ( 6,  2),   
+( 7,  3),             
+( 8,  4), ( 8,  9),   
+( 9,  3), ( 9,  9),   
+(10,  3), (10,  5),   
+(11,  4), (11,  7),   
+(12,  8), (12,  1),   
+(13,  6), (13, 10),   
+(14,  4),             
+(15,  6), (15,  3),  
+(16,  9), (16,  4),   
+(17,  1), (17,  2),   
+(18, 11),             
+(19,  4), (19,  9),   
+(20,  4), (20,  7);   
+
+
 INSERT INTO Filme_DiretorFilme (FilmeID, DiretorID) VALUES
 ( 1, 1),
 ( 2, 2),
@@ -587,9 +509,7 @@ INSERT INTO Filme_DiretorFilme (FilmeID, DiretorID) VALUES
 (19, 1), (19, 6),
 (20, 5);
 
--- ---------------------------------------------------------------------
--- Filme_AtorFilme
--- ---------------------------------------------------------------------
+
 INSERT INTO Filme_AtorFilme (FilmeID, AtorID) VALUES
 ( 1, 1), ( 1, 2), ( 1, 3),
 ( 2, 4), ( 2, 1),
@@ -611,68 +531,3 @@ INSERT INTO Filme_AtorFilme (FilmeID, AtorID) VALUES
 (18, 7), (18, 1),
 (19, 3), (19, 4),
 (20, 1), (20, 6), (20, 7);
-
-
--- =====================================================================
--- 3. CONSULTAS DE VERIFICAÇÃO (opcionais)
--- =====================================================================
-
--- Quantidade de linhas por tabela
-SELECT 'Plano' AS Tabela, COUNT(*) AS Registros FROM Plano
-UNION ALL SELECT 'Cargo',              COUNT(*) FROM Cargo
-UNION ALL SELECT 'Produtora',          COUNT(*) FROM Produtora
-UNION ALL SELECT 'Genero',             COUNT(*) FROM Genero
-UNION ALL SELECT 'Diretor',            COUNT(*) FROM Diretor
-UNION ALL SELECT 'Ator',               COUNT(*) FROM Ator
-UNION ALL SELECT 'Usuario',            COUNT(*) FROM Usuario
-UNION ALL SELECT 'Filme',              COUNT(*) FROM Filme
-UNION ALL SELECT 'Assinatura',         COUNT(*) FROM Assinatura
-UNION ALL SELECT 'Funcionario',        COUNT(*) FROM Funcionario
-UNION ALL SELECT 'Avaliacao',          COUNT(*) FROM Avaliacao
-UNION ALL SELECT 'UsrPagto',           COUNT(*) FROM UsrPagto
-UNION ALL SELECT 'Assiste',            COUNT(*) FROM Assiste
-UNION ALL SELECT 'Modera',             COUNT(*) FROM Modera
-UNION ALL SELECT 'GerenciaConteudo',   COUNT(*) FROM GerenciaConteudo
-UNION ALL SELECT 'FilmPagtoRoy',       COUNT(*) FROM FilmPagtoRoy
-UNION ALL SELECT 'Filme_GeneroFilme',  COUNT(*) FROM Filme_GeneroFilme
-UNION ALL SELECT 'Filme_DiretorFilme', COUNT(*) FROM Filme_DiretorFilme
-UNION ALL SELECT 'Filme_AtorFilme',    COUNT(*) FROM Filme_AtorFilme;
-
--- Nota média por filme
--- SELECT f.FilmeNome, ROUND(AVG(a.Nota), 2) AS NotaMedia, COUNT(*) AS QtdAvaliacoes
--- FROM Filme f JOIN Avaliacao a ON a.FilmeID = f.FilmeID
--- GROUP BY f.FilmeID, f.FilmeNome
--- ORDER BY NotaMedia DESC;
-
--- Total pago por usuário
--- SELECT u.UsuarioNome, SUM(p.ValorPago) AS TotalPago
--- FROM Usuario u JOIN UsrPagto p ON p.UsuarioID = u.UsuarioID
--- GROUP BY u.UsuarioID, u.UsuarioNome
--- ORDER BY TotalPago DESC;
-
--- Filmes mais assistidos
--- SELECT f.FilmeNome, COUNT(*) AS Exibicoes
--- FROM Filme f JOIN Assiste s ON s.FilmeID = f.FilmeID
--- GROUP BY f.FilmeID, f.FilmeNome
--- ORDER BY Exibicoes DESC;
-
--- Ficha de um filme com generos, diretores e atores (novo modelo 3FN)
--- SELECT f.FilmeNome,
---        GROUP_CONCAT(DISTINCT g.GeneroNome  ORDER BY g.GeneroNome  SEPARATOR ', ') AS Generos,
---        GROUP_CONCAT(DISTINCT d.DiretorNome ORDER BY d.DiretorNome SEPARATOR ', ') AS Diretores,
---        GROUP_CONCAT(DISTINCT a.AtorNome    ORDER BY a.AtorNome    SEPARATOR ', ') AS Elenco
--- FROM Filme f
--- LEFT JOIN Filme_GeneroFilme  fg ON fg.FilmeID = f.FilmeID
--- LEFT JOIN Genero             g  ON g.GeneroID = fg.GeneroID
--- LEFT JOIN Filme_DiretorFilme fd ON fd.FilmeID = f.FilmeID
--- LEFT JOIN Diretor            d  ON d.DiretorID = fd.DiretorID
--- LEFT JOIN Filme_AtorFilme    fa ON fa.FilmeID = f.FilmeID
--- LEFT JOIN Ator               a  ON a.AtorID = fa.AtorID
--- GROUP BY f.FilmeID, f.FilmeNome
--- ORDER BY f.FilmeNome;
-
--- Quantidade de filmes por genero
--- SELECT g.GeneroNome, COUNT(*) AS QtdFilmes
--- FROM Genero g JOIN Filme_GeneroFilme fg ON fg.GeneroID = g.GeneroID
--- GROUP BY g.GeneroID, g.GeneroNome
--- ORDER BY QtdFilmes DESC;
